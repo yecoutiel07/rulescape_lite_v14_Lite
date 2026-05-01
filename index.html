@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MetaPrompt Rulescape — Lite</title>
+  <meta property="og:title" content="Rulescape Lite v14">
+<meta property="og:description" content="מערכת אינטראקטיבית לבניית מטא-פרומפטים קולנועיים">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #EEF2F8;
+  --surface: #FFFFFF;
+  --surface2: #F7FAFC;
+  --border: #DDE5EF;
+  --border2: #B8CADE;
+  --text: #1A2535;
+  --muted: #5B6B80;
+  --hint: #96A8BC;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 2px 14px rgba(20,40,80,.07);
+  --shadow-lg: 0 8px 32px rgba(20,40,80,.12);
+  --brand: #0B3D91;
+  --brand-mid: #2563EB;
+  --brand-accent: #38BDF8;
+  --step1: #1A6FA8; --step1-bg: #E8F4FD; --step1-dark: #0D4870;
+  --step2: #6B5EA8; --step2-bg: #F0EDFB; --step2-dark: #3D2F7A;
+  --step3: #2C7A5E; --step3-bg: #E6F5EF; --step3-dark: #164D3A;
+  --step4: #B06A10; --step4-bg: #FDF3E3; --step4-dark: #7A4500;
+  --good-bg: #E8F6EE; --good-text: #1B6B35;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 60px;
+}
+
+/* ── BRAND HEADER ── */
+.header {
+  width: 100%;
+  background: var(--brand);
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content:''; position:absolute;
+  top:-50px; left:-50px; width:260px; height:260px;
+  border-radius:50%; background:rgba(56,189,248,.07); pointer-events:none;
+}
+.header-inner {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 22px 24px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.wordmark {
+  display: flex; align-items: center; gap: 12px;
+}
+.wordmark-icon { flex-shrink: 0; }
+.wordmark-text { display: flex; flex-direction: column; gap: 1px; }
+.wordmark-name { font-size: 1.3rem; font-weight: 900; color: #fff; letter-spacing: -.02em; line-height: 1; }
+.wordmark-sub  { font-size: .65rem; font-weight: 600; color: rgba(255,255,255,.45); letter-spacing: .18em; text-transform: uppercase; }
+.header-right {
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.header-tagline {
+  font-size: .82rem; color: rgba(255,255,255,.65); font-weight: 300; line-height: 1.5;
+  max-width: 240px; text-align: left;
+}
+.lang-row { display: flex; gap: 7px; }
+.lang-btn {
+  border: 1.5px solid rgba(255,255,255,.25); background: transparent;
+  color: rgba(255,255,255,.65); border-radius: 9px; padding: 5px 14px;
+  cursor: pointer; font-size: .82rem; font-weight: 700;
+  font-family: 'Heebo', sans-serif; transition: .15s;
+}
+.lang-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+.lang-btn.active { background: #fff; color: var(--brand); border-color: #fff; }
+
+/* Lite badge + subtitle — now below header */
+.header-sub {
+  width: 100%; max-width: 700px;
+  padding: 14px 0 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.lite-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 999px; padding: 4px 16px;
+  font-size: .78rem; font-weight: 700; color: var(--muted);
+  letter-spacing: .03em; white-space: nowrap;
+}
+.subtitle { font-size: .88rem; color: var(--muted); line-height: 1.6; text-align: center; padding: 0 16px; }
+.full-link {
+  font-size: .78rem; color: var(--hint); font-weight: 500;
+  background: transparent; border: none; padding: 0; cursor: default; text-align: center;
+}
+
+/* ── SAVE INDICATOR ── */
+.save-indicator {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+  background: var(--brand-mid); color: #fff;
+  padding: 5px 18px; border-radius: 999px;
+  font-size: .8rem; font-weight: 700;
+  opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 600;
+}
+.save-indicator.show { opacity: 1; }
+
+/* ── OUTPUT PANEL (step 5 = result) ── */
+.step-bar {
+  display: flex;
+  align-items: center;
+  padding: 20px 28px 0;
+  gap: 0;
+}
+.step-node {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  position: relative; flex: 1;
+}
+.step-node:last-child { flex: 0; }
+.step-circle {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .82rem; font-weight: 700;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  color: var(--hint);
+  transition: .25s;
+  position: relative; z-index: 1;
+}
+.step-circle.done { color: #fff; border-color: transparent; }
+.step-circle.active { color: #fff; border-color: transparent; transform: scale(1.1); box-shadow: 0 3px 12px rgba(0,0,0,.15); }
+.step-label { font-size: .72rem; font-weight: 700; color: var(--hint); transition: .2s; white-space: nowrap; }
+.step-label.active { color: var(--text); }
+.step-label.done { color: var(--muted); }
+.step-connector {
+  flex: 1; height: 2px; background: var(--border);
+  margin-bottom: 22px; transition: .3s;
+  position: relative; top: -11px;
+}
+.step-connector.done { background: var(--step1); }
+
+/* Step colors */
+.step-circle[data-step="1"].active, .step-circle[data-step="1"].done { background: var(--step1); }
+.step-circle[data-step="2"].active, .step-circle[data-step="2"].done { background: var(--step2); }
+.step-circle[data-step="3"].active, .step-circle[data-step="3"].done { background: var(--step3); }
+.step-circle[data-step="4"].active, .step-circle[data-step="4"].done { background: var(--step4); }
+
+/* ── STEP CONTENT ── */
+.step-panel {
+  display: none;
+  padding: 24px 28px;
+  animation: fadeUp .2s ease;
+}
+.step-panel.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.step-heading {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 6px;
+}
+.step-icon {
+  width: 32px; height: 32px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; font-weight: 900; color: #fff; flex-shrink: 0;
+}
+.si-1 { background: var(--step1); }
+.si-2 { background: var(--step2); }
+.si-3 { background: var(--step3); }
+.si-4 { background: var(--step4); }
+
+.step-title { font-size: 1.05rem; font-weight: 800; }
+.step-sub { font-size: .88rem; color: var(--muted); margin-bottom: 18px; line-height: 1.55; }
+
+/* ── GRIDS ── */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 9px; }
+.card-grid.two-col { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.opt-card {
+  border: 1.5px solid var(--border);
+  border-radius: 13px;
+  padding: 12px 13px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: .15s;
+  text-align: right;
+  min-height: 68px;
+  display: flex; flex-direction: column; justify-content: center; gap: 4px;
+}
+.opt-card:hover { border-color: var(--border2); background: var(--surface2); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(20,40,80,.07); }
+.opt-card.sel { font-weight: 700; }
+.opt-card.sel::after { content: '✓'; float: left; font-size: .78rem; font-weight: 900; }
+
+/* Per-step card colors */
+.c1.sel { background: var(--step1-bg); border-color: var(--step1); color: var(--step1-dark); }
+.c2.sel { background: var(--step2-bg); border-color: var(--step2); color: var(--step2-dark); }
+.c3.sel { background: var(--step3-bg); border-color: var(--step3); color: var(--step3-dark); }
+.c4.sel { background: var(--step4-bg); border-color: var(--step4); color: var(--step4-dark); }
+
+.opt-title { font-size: .88rem; font-weight: 600; line-height: 1.3; }
+.opt-note { font-size: .78rem; color: var(--muted); line-height: 1.35; }
+.opt-card.sel .opt-note { color: inherit; opacity: .75; }
+
+/* ── SUB-LANDSCAPE (appears after primary) ── */
+.sub-section { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border2); }
+.sub-label { font-size: .8rem; font-weight: 700; color: var(--muted); margin-bottom: 8px; letter-spacing: .04em; text-transform: uppercase; }
+
+/* ── CHECKBOX ROW ── */
+.check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 7px; }
+.check-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px; border: 1.5px solid var(--border);
+  border-radius: 11px; background: var(--surface);
+  cursor: pointer; transition: .15s; font-size: .88rem;
+}
+.check-item:hover { border-color: var(--border2); background: var(--surface2); }
+.check-item input { accent-color: var(--step2); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+
+/* ── QUICK SELECTORS (step 3 — inline row) ── */
+.quick-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.quick-row .opt-card { min-height: 44px; padding: 8px 12px; flex: 1 1 110px; }
+.quick-section-label { font-size: .78rem; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 7px; margin-top: 14px; }
+.quick-section-label:first-child { margin-top: 0; }
+
+/* ── STEP COUNTER PILL ── */
+.step-count-pill {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 9px; border-radius: 999px;
+  font-size: .68rem; font-weight: 800;
+  margin-top: 3px; transition: background .2s, color .2s;
+  background: #e9eef5; color: var(--muted);
+}
+.step-count-pill.filled { background: var(--good-bg); color: var(--good-text); }
+@keyframes pillBump { 0%{transform:scale(1)} 40%{transform:scale(1.3)} 100%{transform:scale(1)} }
+.step-count-pill.bump { animation: pillBump .25s ease-out; }
+
+/* ── NAV BUTTONS ── */
+.nav-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface2);
+  gap: 8px;
+}
+.btn {
+  border-radius: 11px; padding: 10px 20px;
+  font-family: 'Heebo', sans-serif; font-size: .9rem; font-weight: 700;
+  cursor: pointer; transition: .15s; border: 1.5px solid var(--border2);
+  white-space: nowrap;
+}
+.btn-back { background: var(--surface); color: var(--muted); }
+.btn-back:hover { color: var(--text); border-color: var(--text); }
+.btn-next { color: #fff; border-color: transparent; }
+.btn-next:disabled { opacity: .4; cursor: not-allowed; }
+.btn-next.s1 { background: var(--step1); }
+.btn-next.s1:hover:not(:disabled) { background: var(--step1-dark); }
+.btn-next.s2 { background: var(--step2); }
+.btn-next.s2:hover:not(:disabled) { background: var(--step2-dark); }
+.btn-next.s3 { background: var(--step3); }
+.btn-next.s3:hover:not(:disabled) { background: var(--step3-dark); }
+.btn-next.s4 { background: var(--step4); }
+.btn-next.s4:hover:not(:disabled) { background: var(--step4-dark); }
+.btn-clear-step {
+  border: 1.5px solid #fca5a5; border-radius: 9px; padding: 8px 12px;
+  font-size: .8rem; font-weight: 700; font-family: inherit;
+  cursor: pointer; background: #fff5f5; color: #b91c1c; transition: .15s;
+  white-space: nowrap;
+}
+.btn-clear-step:hover { background: #fee2e2; border-color: #f87171; }
+.btn-clear-step:disabled { opacity: .3; cursor: not-allowed; }
+
+.step-hint { font-size: .76rem; color: var(--hint); text-align: center; flex: 1; min-width: 0; }
+
+/* ── WIZARD shell ── */
+.wizard {
+  width: 100%;
+  max-width: 700px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  margin: 0 16px;
+}
+
+/* ── MOBILE: bottom nav ── */
+@media (max-width: 600px) {
+  body { padding-bottom: 72px; }
+  .header-tagline { display: none; }
+  .wordmark-name { font-size: 1.1rem; }
+  .wizard { margin: 0; border-radius: 0 0 18px 18px; border-left: none; border-right: none; }
+  .step-panel, .result-panel { padding: 16px 16px 100px; }
+  .nav-bar { padding: 12px 16px 16px; }
+  .step-bar { padding: 14px 16px 0; }
+  .step-label { display: none; }
+  .step-count-pill { display: none; }
+  .card-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .opt-note { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .save-indicator { top: auto; bottom: 74px; }
+  .bottom-nav {
+    display: flex;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 62px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    z-index: 900;
+    box-shadow: 0 -4px 16px rgba(20,40,80,.1);
+  }
+  .bnav-btn {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
+    border: none; background: transparent; font-family: inherit;
+    color: var(--muted); padding: 8px 4px 10px;
+    cursor: pointer; position: relative;
+    -webkit-tap-highlight-color: transparent; transition: color .15s;
+  }
+  .bnav-btn.active { color: var(--brand); }
+  .bnav-btn.active::after {
+    content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
+    height: 3px; border-radius: 3px 3px 0 0; background: var(--brand);
+  }
+  .bnav-icon { font-size: 1.2rem; line-height: 1; }
+  .bnav-label { font-size: .6rem; font-weight: 700; white-space: nowrap; }
+  .bnav-badge {
+    position: absolute; top: 5px; right: calc(50% - 18px);
+    min-width: 15px; height: 15px;
+    background: var(--brand); color: #fff;
+    border-radius: 999px; font-size: .55rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 3px; border: 2px solid #fff;
+    opacity: 0; transform: scale(.5); transition: .2s;
+  }
+  .bnav-badge.show { opacity: 1; transform: scale(1); }
+}
+@media (min-width: 601px) {
+  .bottom-nav { display: none; }
+}
+
+/* ── OUTPUT PANEL (step 5 = result) ── */
+.result-panel {
+  display: none;
+  padding: 24px 28px 28px;
+  animation: fadeUp .25s ease;
+}
+.result-panel.active { display: block; }
+
+.result-header { text-align: center; margin-bottom: 22px; }
+.result-icon { font-size: 2rem; margin-bottom: 8px; }
+.result-title { font-size: 1.15rem; font-weight: 900; margin-bottom: 4px; }
+.result-sub { font-size: .88rem; color: var(--muted); }
+.result-rec { margin-top: 8px; font-size: .8rem; color: var(--hint); }
+
+.prompt-block {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.prompt-block-label {
+  font-size: .75rem; font-weight: 700; color: var(--muted);
+  letter-spacing: .05em; text-transform: uppercase; margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.prompt-text {
+  font-size: .9rem; line-height: 1.7; color: var(--text);
+  white-space: pre-wrap; word-break: break-word;
+}
+
+.copy-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: 8px; padding: 4px 12px;
+  font-size: .78rem; font-weight: 700; font-family: 'Heebo', sans-serif;
+  cursor: pointer; transition: .15s; color: var(--muted);
+}
+.copy-btn:hover { border-color: var(--text); color: var(--text); }
+.copy-btn.copied { background: var(--good-bg); color: var(--good-text); border-color: var(--good-text); }
+
+.summary-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.chip {
+  padding: 3px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600;
+  border: 1px solid;
+}
+.chip.c1 { background: var(--step1-bg); color: var(--step1-dark); border-color: var(--step1); }
+.chip.c2 { background: var(--step2-bg); color: var(--step2-dark); border-color: var(--step2); }
+.chip.c3 { background: var(--step3-bg); color: var(--step3-dark); border-color: var(--step3); }
+.chip.c4 { background: var(--step4-bg); color: var(--step4-dark); border-color: var(--step4); }
+
+.result-actions {
+  display: flex; flex-wrap: wrap; gap: 9px; margin-top: 20px; justify-content: center;
+}
+.action-btn {
+  padding: 10px 20px; border-radius: 11px;
+  font-family: 'Heebo', sans-serif; font-size: .88rem; font-weight: 700;
+  cursor: pointer; transition: .15s;
+}
+.btn-restart { background: var(--surface2); border: 1.5px solid var(--border2); color: var(--muted); }
+.btn-restart:hover { color: var(--text); border-color: var(--text); }
+.btn-edit { background: var(--surface2); border: 1.5px solid var(--border2); color: var(--muted); }
+.btn-edit:hover { color: var(--text); border-color: var(--text); }
+.btn-edit.has-warning { background: #FFFBEE; border-color: #D9A240; color: #6B4500; }
+.btn-edit.has-warning:hover { background: #FFF3CC; }
+.btn-full { background: var(--step1); color: #fff; border: 1.5px solid var(--step1-dark); }
+.btn-full:hover { background: var(--step1-dark); }
+.btn-ai { background: #ffffff; border: 1.5px solid var(--border2); color: var(--brand); }
+.btn-ai:hover { border-color: var(--brand); background: #F3F8FF; }
+.ai-transfer-note { width: 100%; text-align: center; font-size: .78rem; color: var(--muted); line-height: 1.55; margin-top: -4px; }
+
+/* ── LANG TOGGLE ── */
+.lang-row-footer { display: none; } /* lang moved to header */
+
+/* ── FOOTER ── */
+.footer {
+  margin-top: 24px; font-size: .78rem; color: var(--hint);
+  text-align: center; line-height: 2; max-width: 700px;
+}
+.footer-credit { font-weight: 700; color: var(--muted); font-size: .82rem; }
+.footer-dev { font-size: .78rem; color: var(--hint); }
+.footer-copy { font-size: .74rem; color: var(--hint); margin-top: 2px; }
+
+/* footer stays the same */
+.footer {
+  margin-top: 24px; font-size: .78rem; color: var(--hint);
+  text-align: center; line-height: 2; max-width: 700px; padding: 0 16px;
+}
+.footer-credit { font-weight: 700; color: var(--muted); font-size: .82rem; }
+.footer-dev { font-size: .78rem; color: var(--hint); }
+.footer-copy { font-size: .74rem; color: var(--hint); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- SAVE INDICATOR -->
+<div class="save-indicator" id="saveIndicator">נשמר ✓</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bnav-btn active" id="bnav1" aria-label="שלב 1 נוף">
+    <span class="bnav-icon">🏔</span>
+    <span class="bnav-label">נוף</span>
+    <span class="bnav-badge" id="bb1"></span>
+  </button>
+  <button class="bnav-btn" id="bnav2" aria-label="שלב 2 אווירה">
+    <span class="bnav-icon">🌅</span>
+    <span class="bnav-label">אווירה</span>
+    <span class="bnav-badge" id="bb2"></span>
+  </button>
+  <button class="bnav-btn" id="bnav3" aria-label="שלב 3 מצלמה">
+    <span class="bnav-icon">🎬</span>
+    <span class="bnav-label">מצלמה</span>
+    <span class="bnav-badge" id="bb3"></span>
+  </button>
+  <button class="bnav-btn" id="bnav4" aria-label="שלב 4 סגנון">
+    <span class="bnav-icon">🎨</span>
+    <span class="bnav-label">סגנון</span>
+    <span class="bnav-badge" id="bb4"></span>
+  </button>
+  <button class="bnav-btn" id="bnavResult" aria-label="פלט">
+    <span class="bnav-icon">⚡</span>
+    <span class="bnav-label">פלט</span>
+    <span class="bnav-badge" id="bbResult"></span>
+  </button>
+</nav>
+
+<!-- BRAND HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="wordmark">
+      <div class="wordmark-icon">
+        <svg width="40" height="40" viewBox="0 0 46 46" fill="none">
+          <circle cx="23" cy="23" r="21" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>
+          <rect x="10" y="14" width="26" height="2.5" rx="1.25" fill="rgba(255,255,255,.9)"/>
+          <rect x="10" y="21" width="18" height="2.5" rx="1.25" fill="rgba(56,189,248,.85)"/>
+          <rect x="10" y="28" width="22" height="2.5" rx="1.25" fill="rgba(255,255,255,.5)"/>
+          <circle cx="35" cy="21.25" r="2.5" fill="#38BDF8"/>
+        </svg>
+      </div>
+      <div class="wordmark-text">
+        <span class="wordmark-name">Rulescape <span style="font-weight:400;opacity:.7;font-size:.8em">Lite</span></span>
+        <span class="wordmark-sub">MetaPrompt System</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <p class="header-tagline" id="mainSub">גרסה מהירה לתחילת עבודה</p>
+      <div class="lang-row">
+        <button class="lang-btn active" id="heBtn">עברית</button>
+        <button class="lang-btn" id="enBtn">English</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER-SUB: badge + subtitle -->
+<div class="header-sub">
+  <div class="lite-badge"><span id="badgeText">MetaPrompt Rulescape — Lite</span></div>
+  <span class="full-link" id="fullLink">← קיימת גרסה מורחבת</span>
+</div>
+
+<!-- WIZARD -->
+<div class="wizard" id="wizard">
+
+  <!-- STEP BAR -->
+  <div class="step-bar" id="stepBar"></div>
+
+  <!-- STEP 1: נוף -->
+  <div class="step-panel active" id="panel1">
+    <div class="step-heading">
+      <div class="step-icon si-1">1</div>
+      <div class="step-title" id="s1title">יחידת נוף</div>
+    </div>
+    <p class="step-sub" id="s1sub">בחר את עולם הנוף הבסיסי של התמונה.</p>
+    <div class="card-grid" id="primaryGrid"></div>
+    <div class="sub-section" id="subSection" style="display:none">
+      <div class="sub-label" id="subLabel">דיוק תת־נוף</div>
+      <div class="card-grid" id="subGrid"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: אווירה -->
+  <div class="step-panel" id="panel2">
+    <div class="step-heading">
+      <div class="step-icon si-2">2</div>
+      <div class="step-title" id="s2title">אווירה וסביבה</div>
+    </div>
+    <p class="step-sub" id="s2sub">בחר את הזמן, האווירה ותנאי הסביבה.</p>
+    <div class="card-grid two-col" id="moodGrid"></div>
+    <div class="sub-section">
+      <div class="sub-label" id="condLabel">תנאי סביבה (עד 2)</div>
+      <div class="check-grid" id="condGrid"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: מצלמה וצבע -->
+  <div class="step-panel" id="panel3">
+    <div class="step-heading">
+      <div class="step-icon si-3">3</div>
+      <div class="step-title" id="s3title">מצלמה וצבע</div>
+    </div>
+    <p class="step-sub" id="s3sub">3 בחירות מהירות שמעצבות את הראייה.</p>
+
+    <div class="quick-section-label" id="angleLabel">זווית צילום</div>
+    <div class="quick-row" id="angleGrid"></div>
+
+    <div class="quick-section-label" id="framingLabel">פריים</div>
+    <div class="quick-row" id="framingGrid"></div>
+
+    <div class="quick-section-label" id="colorLabel">סגנון צבעים</div>
+    <div class="quick-row" id="colorGrid"></div>
+  </div>
+
+  <!-- STEP 4: סגנון ופלטפורמה -->
+  <div class="step-panel" id="panel4">
+    <div class="step-heading">
+      <div class="step-icon si-4">4</div>
+      <div class="step-title" id="s4title">סגנון ופלטפורמה</div>
+    </div>
+    <p class="step-sub" id="s4sub">הגדר את העולם הסגנוני ופורמט הפרסום.</p>
+
+    <div class="quick-section-label" id="styleLabel">סגנון קולנועי</div>
+    <div class="card-grid" id="styleGrid"></div>
+
+    <div class="quick-section-label" id="platformLabel">פורמט / פלטפורמה</div>
+    <div class="card-grid two-col" id="platformGrid"></div>
+  </div>
+
+  <!-- RESULT PANEL -->
+  <div class="result-panel" id="resultPanel">
+    <div class="result-header">
+      <div class="result-icon">✦</div>
+      <div class="result-title" id="resultTitle">המטא־פרומפט שלך מוכן</div>
+      <div class="result-sub" id="resultSub">העתק לכלי AI לייצור תמונה</div>
+      <div class="result-rec" id="resultRec"></div>
+    </div>
+
+    <div class="prompt-block">
+      <div class="prompt-block-label">
+        <span id="shortLabel">Short Prompt — לשימוש ישיר</span>
+        <button class="copy-btn" id="copyShortBtn">העתק</button>
+      </div>
+      <div class="prompt-text" id="shortOut"></div>
+    </div>
+
+    <div class="prompt-block">
+      <div class="prompt-block-label">
+        <span id="fullPromptLabel">מטא־פרומפט מלא (עברית)</span>
+        <button class="copy-btn" id="copyHeBtn">העתק</button>
+      </div>
+      <div class="prompt-text" id="heOut"></div>
+    </div>
+
+    <div class="prompt-block">
+      <div class="prompt-block-label">
+        <span>Meta Prompt (English)</span>
+        <button class="copy-btn" id="copyEnBtn">Copy</button>
+      </div>
+      <div class="prompt-text" id="enOut"></div>
+    </div>
+
+    <div class="summary-chips" id="summaryChips"></div>
+
+    <div class="result-actions">
+      <button class="action-btn btn-restart" id="restartBtn">התחל מחדש</button>
+      <button class="action-btn btn-edit" id="editBtn">← ערוך בחירות</button>
+      <button class="action-btn btn-ai" id="openChatGPTBtn">העתק ופתח ChatGPT</button>
+      <button class="action-btn btn-ai" id="openGeminiBtn">העתק ופתח Gemini</button>
+      <div class="ai-transfer-note" id="aiTransferNote">הפרומפט יועתק ללוח, והכלי ייפתח בחלון חדש להדבקה/שליחה.</div>
+      <button class="action-btn btn-full" id="goFullBtn">קיימת גרסה מורחבת</button>
+    </div>
+  </div>
+
+  <!-- NAV BAR -->
+  <div class="nav-bar" id="navBar">
+    <button class="btn btn-back" id="backBtn" style="visibility:hidden">←</button>
+    <span class="step-hint" id="stepHint"></span>
+    <button class="btn-clear-step" id="clearStepBtn" disabled title="נקה שלב זה">✕ נקה</button>
+    <button class="btn btn-next s1" id="nextBtn">הבא ←</button>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div id="footerCredit"></div>
+  <div id="footerDev"></div>
+  <div id="footerCopy"></div>
+</div>
+
+<script>
+/* ── DATA ── */
+const data = {
+  primary: [
+    {he:'הרים',en:'mountains',noteHe:'גובה, רכסים, מדרונות',noteEn:'Height, ridges, slopes'},
+    {he:'מדבר',en:'desert',noteHe:'מרחב חשוף ועוצמתי',noteEn:'Exposed, dry, powerful'},
+    {he:'מישור',en:'plain',noteHe:'אופק רחב, פתיחות',noteEn:'Wide horizon, openness'},
+    {he:'יער',en:'forest',noteHe:'עומק, מסתור, סוד',noteEn:'Depth, concealment, mystery'},
+    {he:'חוף',en:'coast',noteHe:'מפגש יבשה ומים',noteEn:'Land meets water'}
+  ],
+  sub: {
+    'הרים': [{he:'רכס הרים',en:'mountain range'},{he:'עמק הררי',en:'mountain valley'},{he:'מדרונות תלולים',en:'steep slopes'}],
+    'מדבר': [{he:'מדבר חולי',en:'sandy desert'},{he:'מדבר סלעי',en:'rocky desert'},{he:'ואדי',en:'wadi'}],
+    'מישור': [{he:'מישור פתוח',en:'vast open plain'},{he:'ערבה',en:'endless grassland'},{he:'מישור חקלאי',en:'agricultural fields'}],
+    'יער':   [{he:'יער גשמים טרופי',en:'tropical rainforest, dense lush canopy, broad wet leaves'},{he:'יער אורנים',en:'pine forest, tall straight trees, needle leaves, deep shadows'},{he:'יער עלים רחבים',en:'deciduous forest, broad green leaves, soft filtered sunlight between trees'}],
+    'חוף':   [{he:'חוף חולי',en:'sandy coast'},{he:'חוף סלעי',en:'rocky coast'},{he:'מפרץ',en:'bay'}]
+  },
+  moods: [
+    {he:'זריחה רגועה',en:'calm sunrise',noteHe:'רוך ותקווה',noteEn:'Softness, hope'},
+    {he:'שקיעה דרמטית',en:'dramatic sunset',noteHe:'עומס רגשי',noteEn:'Emotional weight'},
+    {he:'לילה מסתורי',en:'mysterious night',noteHe:'סוד וצללים',noteEn:'Mystery, shadows'},
+    {he:'יום מעונן',en:'cloudy day',noteHe:'מתח שקט',noteEn:'Quiet tension'},
+    {he:'שמיים כחולים',en:'clear blue sky',noteHe:'פתיחות ובהירות',noteEn:'Open, bright'},
+    {he:'שמיים סוערים',en:'stormy sky',noteHe:'איום ושינוי',noteEn:'Threat, change'},
+    {he:'אור צהריים קשה',en:'harsh midday light',noteHe:'חדות וחשיפה',noteEn:'Sharpness, exposure'},
+    {he:'עננים כבדים',en:'heavy clouds',noteHe:'עומס ומתח',noteEn:'Weight and tension'}
+  ],
+  conditions: [
+    {he:'ערפל',en:'fog'},{he:'רוח חזקה',en:'strong wind'},{he:'גשם',en:'rain'},
+    {he:'שלג',en:'snow'},{he:'חום כבד',en:'heavy heat'},{he:'אבק באוויר',en:'dust in the air'},
+    {he:'לחות כבדה',en:'heavy humidity'},{he:'עננות נמוכה',en:'low clouds'}
+  ],
+  angles: [
+    {he:'מבט עילי',en:"Bird's Eye View"},{he:'גובה עיניים',en:'Eye Level'},
+    {he:'זווית נמוכה',en:'Low Angle'},{he:'צילום רחפן',en:'Drone Shot'},
+    {he:'מבט מהצד',en:'Profile View'},{he:'POV',en:'Point of View (POV)'},
+    {he:'זווית גבוהה',en:'High Angle'}
+  ],
+  framings: [
+    {he:'צילום רחב מאוד',en:'Extreme Wide Shot'},{he:'צילום רחב',en:'Wide Shot'},
+    {he:'צילום בינוני',en:'Medium Shot'},{he:'קלוז־אפ',en:'Close-Up'},
+    {he:'פריים סימטרי',en:'Symmetrical Framing'},{he:'עומק שדה',en:'Depth of Field'}
+  ],
+  colors: [
+    {he:'צבעים טבעיים',en:'Natural Colors'},{he:'צבעים חמים',en:'Warm Tones'},
+    {he:'צבעים קרים',en:'Cold Tones'},{he:'קונטרסט גבוה',en:'High Contrast'},
+    {he:'וינטג׳ / דהוי',en:'Vintage Look'},{he:'קולנועי דרמטי',en:'Cinematic Color Grading'},
+    {he:'מונוכרום',en:'Monochrome'},{he:'רווי מאוד',en:'High Saturation'}
+  ],
+  styles: [
+    {he:'ריאליסטי',en:'Realistic'},{he:'דיסטופי',en:'Dystopian'},
+    {he:'פנטסיה',en:'Fantasy'},{he:'מדע בדיוני',en:'Sci-Fi'},
+    {he:'אנימציה',en:'Animation'},{he:'מצויר',en:'Illustrated'}
+  ],
+  platforms: [
+    {he:'קולנועי רחב (16:9)',en:'Cinematic Wide (16:9)'},{he:'אנכי (9:16)',en:'Vertical (9:16)'},
+    {he:'ריבועי (1:1)',en:'Square (1:1)'},{he:'אינסטגרם פוסט',en:'Instagram Post'},
+    {he:'אינסטגרם סטורי',en:'Instagram Story'},{he:'טיקטוק',en:'TikTok'},
+    {he:'מסך נייד',en:'Mobile Screen'},{he:'פייסבוק פוסט',en:'Facebook Post'}
+  ]
+};
+
+/* ── UI STRINGS ── */
+const ui = {
+  he: {
+    badge:'MetaPrompt Rulescape — Lite',
+    mainTitle:'בנה <em>עולם חזותי</em> ב־4 צעדים',
+    mainSub:'גרסה מהירה לתחילת עבודה — 4 שלבים, פלט מוכן להעתקה',
+    fullLink:'← קיימת גרסה מורחבת',
+    stepLabels:['נוף','אווירה','מצלמה','סגנון'],
+    s1title:'יחידת נוף', s1sub:'בחר את עולם הנוף הבסיסי של התמונה.',
+    s2title:'אווירה וסביבה', s2sub:'בחר את הזמן, האווירה ותנאי הסביבה.',
+    s3title:'מצלמה וצבע', s3sub:'3 בחירות מהירות שמעצבות את הראייה.',
+    s4title:'סגנון ופלטפורמה', s4sub:'הגדר את העולם הסגנוני ופורמט הפרסום.',
+    subLabel:'דיוק תת־נוף', condLabel:'תנאי סביבה (עד 2)',
+    angleLabel:'זווית צילום', framingLabel:'פריים', colorLabel:'סגנון צבעים',
+    styleLabel:'סגנון קולנועי', platformLabel:'פורמט / פלטפורמה',
+    next:'הבא ←', back:'← חזור', generate:'צור prompt ✦',
+    hints:['בחר נוף — חובה','בחר אווירה — חובה','בחר לפחות זווית אחת','בחר סגנון ופלטפורמה'],
+    resultTitle:'המטא־פרומפט שלך מוכן',
+    resultSub:'העתק לכלי AI לייצור תמונה',
+    resultRec:'מומלץ לנופים טבעיים: Imagen 3 דרך Google ImageFX — labs.google/fx',
+    shortLabel:'Short Prompt — לשימוש ישיר',
+    fullPromptLabel:'מטא־פרומפט מלא (עברית)',
+    copyBtn:'העתק', copied:'✓ הועתק',
+    restart:'התחל מחדש', editBtn:'← ערוך בחירות', editBtnWarn:'← ערוך — שים לב לאזהרה', goFull:'קיימת גרסה מורחבת',
+    openChatGPT:'העתק ופתח ChatGPT', openGemini:'העתק ופתח Gemini',
+    aiTransferNote:'הפרומפט יועתק ללוח, והכלי ייפתח בחלון חדש להדבקה/שליחה.',
+    footerCredit:'פיתוח המודל: יקותיאל (קותי) בלוך',
+    footerDev:'פותח עבור השתלמות מורים ליישומי גרפיקה במגמת תקשוב, משרד החינוך תשפ״ו',
+    footerCopy:'© כל הזכויות שמורות · MetaPrompt Rulescape Lite'
+  },
+  en: {
+    badge:'MetaPrompt Rulescape — Lite',
+    mainTitle:'Build a <em>Visual World</em> in 4 Steps',
+    mainSub:'Quick starter version — 4 steps, prompt ready to copy',
+    fullLink:'Extended version available →',
+    stepLabels:['Landscape','Mood','Camera','Style'],
+    s1title:'Landscape Unit', s1sub:'Choose the foundational landscape world.',
+    s2title:'Mood & Environment', s2sub:'Choose the time, mood and environmental conditions.',
+    s3title:'Camera & Color', s3sub:'3 quick choices that shape the visual.',
+    s4title:'Style & Platform', s4sub:'Set the stylistic world and publication format.',
+    subLabel:'Sub-landscape', condLabel:'Environmental conditions (up to 2)',
+    angleLabel:'Camera Angle', framingLabel:'Framing', colorLabel:'Color Style',
+    styleLabel:'Visual Style', platformLabel:'Format / Platform',
+    next:'Next →', back:'← Back', generate:'Generate prompt ✦',
+    hints:['Choose a landscape — required','Choose a mood — required','Choose at least one angle','Choose style and platform'],
+    resultTitle:'Your Meta-Prompt is Ready',
+    resultSub:'Copy to an AI image generation tool',
+    resultRec:'Recommended for natural landscapes: Imagen 3 via Google ImageFX — labs.google/fx',
+    shortLabel:'Short Prompt — ready to use',
+    fullPromptLabel:'Full Meta Prompt (Hebrew)',
+    copyBtn:'Copy', copied:'✓ Copied',
+    restart:'Start Over', editBtn:'← Edit choices', editBtnWarn:'← Edit — see warning', goFull:'Extended version available',
+    openChatGPT:'Copy & open ChatGPT', openGemini:'Copy & open Gemini',
+    aiTransferNote:'The prompt will be copied to your clipboard, then the tool opens in a new window for paste/send.',
+    footerCredit:'Model developed by: Yekutiel (Kuti) Bloch',
+    footerDev:'Developed for a teacher training program in graphic applications, ICT Track, Ministry of Education 2026',
+    footerCopy:'© All rights reserved · MetaPrompt Rulescape Lite'
+  }
+};
+/* ── STATE ── */
+const st = {
+  primaryHe:'', primaryEn:'',
+  subHe:'', subEn:'',
+  moodHe:'', moodEn:'',
+  condHe:[], condEn:[],
+  angleHe:'', angleEn:'',
+  framingHe:'', framingEn:'',
+  colorHe:'', colorEn:'',
+  styleHe:'', styleEn:'',
+  platformHe:'', platformEn:''
+};
+
+let lang = 'he';
+let currentStep = 1;
+const TOTAL = 4;
+
+/* ── HELPERS ── */
+function t(item){ return lang==='he' ? item.he : item.en; }
+function hw(he,en){ return lang==='he'&&he&&en&&he!==en ? `${he} (${en})` : (lang==='he'?he:en)||''; }
+
+/* ── CLIPBOARD ── */
+function copyText(text, btn){
+  const d = ui[lang];
+  const orig = btn.textContent;
+  const doIt = () => {
+    btn.textContent = d.copied;
+    btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  };
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(doIt).catch(()=>fallback(text,doIt));
+  } else { fallback(text,doIt); }
+}
+function fallback(text,cb){
+  const ta=document.createElement('textarea');
+  ta.value=text; ta.style.cssText='position:fixed;left:-9999px;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{document.execCommand('copy');if(cb)cb();}catch(e){}
+  document.body.removeChild(ta);
+}
+
+/* ── STEP COMPLETION CHECK (for counters) ── */
+function stepFilled(s){
+  if(s===1) return !!st.primaryHe;
+  if(s===2) return !!st.moodHe;
+  if(s===3) return !!st.angleHe;
+  if(s===4) return !!(st.styleHe || st.platformHe);
+  return false;
+}
+function stepCount(s){
+  if(s===1) return (st.primaryHe?1:0)+(st.subHe?1:0);
+  if(s===2) return (st.moodHe?1:0)+st.condHe.length;
+  if(s===3) return (st.angleHe?1:0)+(st.framingHe?1:0)+(st.colorHe?1:0);
+  if(s===4) return (st.styleHe?1:0)+(st.platformHe?1:0);
+  return 0;
+}
+
+/* ── RENDER STEP BAR ── */
+function renderStepBar(){
+  const bar = document.getElementById('stepBar');
+  bar.innerHTML = '';
+  const d = ui[lang];
+  for(let i=1; i<=TOTAL; i++){
+    const node = document.createElement('div');
+    node.className = 'step-node';
+    // Circle
+    const circle = document.createElement('div');
+    circle.className = 'step-circle';
+    circle.dataset.step = i;
+    if(i < currentStep) circle.classList.add('done');
+    if(i === currentStep) circle.classList.add('active');
+    circle.textContent = i < currentStep ? '✓' : i;
+    circle.style.cursor = 'pointer';
+    circle.onclick = (()=>{ const n=i; return ()=>{ goTo(n); }; })();
+    // Label
+    const label = document.createElement('div');
+    label.className = 'step-label' + (i===currentStep?' active':i<currentStep?' done':'');
+    label.textContent = d.stepLabels[i-1];
+    // Counter pill
+    const cnt = stepCount(i);
+    const pill = document.createElement('div');
+    pill.className = 'step-count-pill' + (cnt>0?' filled':'');
+    pill.id = 'pill'+i;
+    pill.textContent = cnt > 0 ? cnt : '·';
+    node.appendChild(circle);
+    node.appendChild(label);
+    node.appendChild(pill);
+    bar.appendChild(node);
+    if(i < TOTAL){
+      const conn = document.createElement('div');
+      conn.className = 'step-connector' + (i<currentStep?' done':'');
+      bar.appendChild(conn);
+    }
+  }
+}
+
+/* ── RENDER CARDS ── */
+function makeCard(item, selected, onClick, cls){
+  const btn = document.createElement('button');
+  btn.className = `opt-card ${cls}${selected?' sel':''}`;
+  btn.innerHTML = `<div class="opt-title">${t(item)}</div>${(lang==='he'?item.noteHe:item.noteEn)?`<div class="opt-note">${lang==='he'?item.noteHe:item.noteEn}</div>`:''}`;
+  btn.onclick = onClick;
+  return btn;
+}
+
+/* ── STEP 1 ── */
+function renderStep1(){
+  const grid = document.getElementById('primaryGrid');
+  grid.innerHTML = '';
+  data.primary.forEach(item => {
+    grid.appendChild(makeCard(item, st.primaryHe===item.he, ()=>{
+      const wasSelected = st.primaryHe===item.he;
+      if(wasSelected){ st.primaryHe=''; st.primaryEn=''; st.subHe=''; st.subEn=''; }
+      else { st.primaryHe=item.he; st.primaryEn=item.en; st.subHe=''; st.subEn=''; }
+      renderStep1(); renderSub(); checkNav(); saveState();
+      // auto-scroll to sub-section when a primary is selected
+      if(!wasSelected && data.sub[item.he]){
+        setTimeout(()=>{
+          document.getElementById('subSection').scrollIntoView({behavior:'smooth',block:'nearest'});
+        }, 160);
+      }
+    }, 'c1'));
+  });
+  renderSub();
+}
+function renderSub(){
+  const sec = document.getElementById('subSection');
+  const grid = document.getElementById('subGrid');
+  const subs = data.sub[st.primaryHe] || [];
+  if(!subs.length || !st.primaryHe){ sec.style.display='none'; return; }
+  sec.style.display = 'block';
+  grid.innerHTML = '';
+  subs.forEach(item => {
+    grid.appendChild(makeCard(item, st.subHe===item.he, ()=>{
+      if(st.subHe===item.he){ st.subHe=''; st.subEn=''; }
+      else { st.subHe=item.he; st.subEn=item.en; }
+      renderSub(); checkNav(); saveState(); updateBnavBadges(); renderStepBar();
+    }, 'c1'));
+  });
+}
+
+/* ── STEP 2 ── */
+function renderStep2(){
+  const mg = document.getElementById('moodGrid');
+  mg.innerHTML = '';
+  data.moods.forEach(item => {
+    mg.appendChild(makeCard(item, st.moodHe===item.he, ()=>{
+      if(st.moodHe===item.he){ st.moodHe=''; st.moodEn=''; }
+      else { st.moodHe=item.he; st.moodEn=item.en; }
+      renderStep2(); checkNav(); saveState(); updateBnavBadges(); renderStepBar();
+    }, 'c2'));
+  });
+  const cg = document.getElementById('condGrid');
+  cg.innerHTML = '';
+  data.conditions.forEach(item => {
+    const wrap = document.createElement('label');
+    wrap.className = 'check-item';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = st.condHe.includes(item.he);
+    chk.addEventListener('change', e=>{
+      if(e.target.checked){
+        if(st.condHe.length>=2){e.target.checked=false;return;}
+        st.condHe.push(item.he); st.condEn.push(item.en);
+      } else {
+        st.condHe=st.condHe.filter(v=>v!==item.he);
+        st.condEn=st.condEn.filter(v=>v!==item.en);
+      }
+      saveState(); updateBnavBadges(); renderStepBar();
+    });
+    const sp = document.createElement('span');
+    sp.textContent = t(item);
+    wrap.appendChild(chk); wrap.appendChild(sp);
+    cg.appendChild(wrap);
+  });
+}
+
+/* ── STEP 3 ── */
+function renderStep3(){
+  renderQuick('angleGrid', data.angles, 'angleHe', 'angleEn', 'c3');
+  renderQuick('framingGrid', data.framings, 'framingHe', 'framingEn', 'c3');
+  renderQuick('colorGrid', data.colors, 'colorHe', 'colorEn', 'c3');
+}
+function renderQuick(id, items, keyHe, keyEn, cls){
+  const g = document.getElementById(id);
+  g.innerHTML = '';
+  items.forEach(item => {
+    g.appendChild(makeCard(item, st[keyHe]===item.he, ()=>{
+      if(st[keyHe]===item.he){ st[keyHe]=''; st[keyEn]=''; }
+      else { st[keyHe]=item.he; st[keyEn]=item.en; }
+      renderQuick(id,items,keyHe,keyEn,cls);
+      checkNav(); saveState(); updateBnavBadges(); renderStepBar();
+    }, cls));
+  });
+}
+
+/* ── STEP 4 ── */
+function renderStep4(){
+  renderQuick('styleGrid', data.styles, 'styleHe', 'styleEn', 'c4');
+  renderQuick('platformGrid', data.platforms, 'platformHe', 'platformEn', 'c4');
+}
+
+/* ── PROMPT BUILDERS ── */
+function detectConflicts(){
+  const w = [];
+  if(st.angleEn==='Low Angle' && st.framingEn==='Extreme Wide Shot')
+    w.push(lang==='he'
+      ? 'זווית נמוכה + EWS סותרים — ChatGPT ייצר מבט שטוח. שקול Wide Shot במקום EWS.'
+      : 'Low Angle + Extreme Wide Shot conflict — ChatGPT will flatten the view. Consider Wide Shot instead.');
+  const neutralColor = !st.colorEn || st.colorEn==='Natural Colors';
+  if(st.moodEn==='clear blue sky' && neutralColor && st.styleEn==='Realistic')
+    w.push(lang==='he'
+      ? 'שמיים כחולים + ריאליסטי + צבעים טבעיים = "צילום טבע" ניטרלי ללא דרמה. שנה אחת מהבחירות.'
+      : 'Clear blue sky + Realistic + Natural Colors = neutral nature photo with no drama. Change one of these choices.');
+  return w;
+}
+
+function buildShort(){
+  const p = [];
+  if(st.styleEn) p.push(st.styleEn);
+  if(st.platformEn) p.push(st.platformEn);
+  if(st.primaryEn) p.push(st.primaryEn);
+  if(st.subEn) p.push(st.subEn);
+  if(st.condEn.length) p.push(st.condEn.join(', '));
+  if(st.moodEn) p.push(st.moodEn);
+  // FIX: merge angle+framing if both present, skip Drone duplicate
+  if(st.angleEn && st.framingEn) p.push(`${st.angleEn}, ${st.framingEn}`);
+  else { if(st.angleEn) p.push(st.angleEn); if(st.framingEn) p.push(st.framingEn); }
+  if(st.colorEn) p.push(st.colorEn);
+  return p.join(', ');
+}
+function buildHe(){
+  const p = ['צור תמונת נוף מייסדת לסיפור חזותי.'];
+  if(st.styleEn) p.push(`הסגנון הקולנועי: ${hw(st.styleHe,st.styleEn)}.`);
+  if(st.platformEn) p.push(`פורמט התצוגה: ${st.platformEn}.`);
+  if(st.primaryHe) p.push(`יחידת הנוף הראשית: ${st.primaryHe}.`);
+  if(st.subHe) p.push(`תת־יחידה: ${hw(st.subHe,st.subEn)}.`);
+  if(st.condHe.length) p.push(`תנאי סביבה: ${st.condHe.map((h,i)=>hw(h,st.condEn[i])).join(', ')}.`);
+  if(st.moodHe) p.push(`זמן ואווירה: ${hw(st.moodHe,st.moodEn)}.`);
+  // FIX: merge angle+framing into one sentence
+  if(st.angleHe && st.framingHe) p.push(`מצלמה: ${hw(st.angleHe,st.angleEn)}, ${hw(st.framingHe,st.framingEn)}.`);
+  else { if(st.angleEn) p.push(`זווית: ${hw(st.angleHe,st.angleEn)}.`); if(st.framingEn) p.push(`פריים: ${hw(st.framingHe,st.framingEn)}.`); }
+  if(st.colorEn) p.push(`צבעוניות: ${hw(st.colorHe,st.colorEn)}.`);
+  p.push('הקומפוזיציה צריכה להיות קולנועית ובעלת עומק ויזואלי ברור.');
+  return p.join(' ');
+}
+function buildEn(){
+  const p = ['Create a foundational landscape image for a visual story.'];
+  if(st.styleEn) p.push(`Visual style: ${st.styleEn}.`);
+  if(st.platformEn) p.push(`Format: ${st.platformEn}.`);
+  if(st.primaryEn) p.push(`Primary landscape: ${st.primaryEn}.`);
+  if(st.subEn) p.push(`Sub-landscape: ${st.subEn}.`);
+  // FIX: merge conditions into environment line when prompt is loaded
+  const loaded = [st.styleEn,st.platformEn,st.primaryEn,st.subEn].filter(Boolean).length > 2;
+  if(loaded && st.condEn.length) p.push(`Atmosphere: ${st.moodEn ? st.moodEn+', ' : ''}${st.condEn.join(', ')}.`);
+  else {
+    if(st.condEn.length) p.push(`Environmental conditions: ${st.condEn.join(', ')}.`);
+    if(st.moodEn) p.push(`Time and mood: ${st.moodEn}.`);
+  }
+  if(!loaded || !st.condEn.length) {} // mood already merged above if loaded
+  else if(!loaded && st.moodEn) p.push(`Time and mood: ${st.moodEn}.`);
+  // FIX: merge angle+framing
+  if(st.angleEn && st.framingEn) p.push(`Camera: ${st.angleEn}, ${st.framingEn}.`);
+  else { if(st.angleEn) p.push(`Camera angle: ${st.angleEn}.`); if(st.framingEn) p.push(`Framing: ${st.framingEn}.`); }
+  if(st.colorEn) p.push(`Color style: ${st.colorEn}.`);
+  p.push('Render as a believable, cinematic, and visually clear composition.');
+  return p.join(' ');
+}
+
+/* ── RESULT ── */
+function showResult(){
+  for(let i=1;i<=TOTAL;i++){
+    document.getElementById('panel'+i).classList.remove('active');
+  }
+  document.getElementById('resultPanel').classList.add('active');
+  document.getElementById('navBar').style.display = 'none';
+
+  const d = ui[lang];
+  document.getElementById('resultTitle').textContent = d.resultTitle;
+  document.getElementById('resultSub').textContent = d.resultSub;
+  document.getElementById('resultRec').textContent = d.resultRec;
+  document.getElementById('shortLabel').textContent = d.shortLabel;
+  document.getElementById('fullPromptLabel').textContent = d.fullPromptLabel;
+  document.getElementById('copyShortBtn').textContent = d.copyBtn;
+  document.getElementById('copyHeBtn').textContent = d.copyBtn;
+  document.getElementById('copyEnBtn').textContent = d.copyBtn;
+  document.getElementById('restartBtn').textContent = d.restart;
+  document.getElementById('goFullBtn').textContent = d.goFull;
+  document.getElementById('openChatGPTBtn').textContent = d.openChatGPT;
+  document.getElementById('openGeminiBtn').textContent = d.openGemini;
+  document.getElementById('aiTransferNote').textContent = d.aiTransferNote;
+
+  // conflict warnings — simple banner
+  const warnings = detectConflicts();
+  let wBox = document.getElementById('conflictBox');
+  if(!wBox){
+    wBox = document.createElement('div');
+    wBox.id = 'conflictBox';
+    document.getElementById('summaryChips').before(wBox);
+  }
+  if(warnings.length){
+    const title = lang==='he' ? 'שים לב לפני שליחה ל-AI:' : 'Note before sending to AI:';
+    wBox.innerHTML = `<div style="background:#FFFBEE;border:1px solid #D9A240;border-radius:11px;padding:10px 14px;margin-top:14px;font-size:.84rem;line-height:1.75;color:#6B4500;">
+      <strong>${title}</strong>
+      ${warnings.map(w=>`<div style="margin-top:3px;">— ${w}</div>`).join('')}
+    </div>`;
+  } else {
+    wBox.innerHTML = '';
+  }
+
+  // edit button — highlight if warnings exist
+  const editBtn = document.getElementById('editBtn');
+  if(warnings.length){
+    editBtn.textContent = d.editBtnWarn;
+    editBtn.classList.add('has-warning');
+  } else {
+    editBtn.textContent = d.editBtn;
+    editBtn.classList.remove('has-warning');
+  }
+
+  document.getElementById('shortOut').textContent = buildShort();
+  document.getElementById('heOut').textContent = buildHe();
+  document.getElementById('enOut').textContent = buildEn();
+
+  // chips
+  const chips = document.getElementById('summaryChips');
+  chips.innerHTML = '';
+  const add = (v, cls) => { if(v){ const c=document.createElement('span'); c.className=`chip ${cls}`; c.textContent=v; chips.appendChild(c); }};
+  add(lang==='he'?st.primaryHe:st.primaryEn,'c1');
+  add(lang==='he'?st.subHe:st.subEn,'c1');
+  add(lang==='he'?st.moodHe:st.moodEn,'c2');
+  (lang==='he'?st.condHe:st.condEn).forEach(v=>add(v,'c2'));
+  add(st.angleEn,'c3'); add(st.framingEn,'c3'); add(st.colorEn,'c3');
+  add(lang==='he'?st.styleHe:st.styleEn,'c4');
+  add(st.platformEn,'c4');
+}
+
+/* ── NAV ── */
+function canAdvance(){
+  if(currentStep===1) return !!st.primaryHe;
+  if(currentStep===2) return !!st.moodHe;
+  if(currentStep===3) return !!st.angleEn;
+  if(currentStep===4) return true;
+  return true;
+}
+function checkNav(){
+  const nb = document.getElementById('nextBtn');
+  nb.disabled = !canAdvance();
+}
+function goTo(step){
+  if(step < 1 || step > TOTAL+1) return;
+  for(let i=1;i<=TOTAL;i++) document.getElementById('panel'+i).classList.remove('active');
+  document.getElementById('resultPanel').classList.remove('active');
+  document.getElementById('navBar').style.display = 'flex';
+
+  if(step > TOTAL){ showResult(); return; }
+
+  currentStep = step;
+  document.getElementById('panel'+step).classList.add('active');
+  renderStepBar();
+  updateNavLabels();
+  updateBnavActive();
+  updateBnavBadges();
+
+  const d = ui[lang];
+  const bb = document.getElementById('backBtn');
+  bb.style.visibility = step===1 ? 'hidden' : 'visible';
+  bb.textContent = d.back;
+
+  const nb = document.getElementById('nextBtn');
+  nb.className = `btn btn-next s${step}`;
+  nb.textContent = step===TOTAL ? d.generate : d.next;
+  checkNav();
+}
+function updateNavLabels(){
+  const d = ui[lang];
+  document.getElementById('stepHint').textContent = d.hints[currentStep-1] || '';
+}
+
+/* ── APPLY LANGUAGE STRINGS ── */
+function applyLang(){
+  const d = ui[lang];
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang==='he'?'rtl':'ltr';
+  document.getElementById('heBtn').classList.toggle('active', lang==='he');
+  document.getElementById('enBtn').classList.toggle('active', lang==='en');
+  document.getElementById('badgeText').textContent = d.badge;
+  const ms = document.getElementById('mainSub');
+  if(ms) ms.textContent = d.mainSub;
+  document.getElementById('fullLink').textContent = d.fullLink;
+  document.getElementById('subLabel').textContent = d.subLabel;
+  document.getElementById('condLabel').textContent = d.condLabel;
+  document.getElementById('angleLabel').textContent = d.angleLabel;
+  document.getElementById('framingLabel').textContent = d.framingLabel;
+  document.getElementById('colorLabel').textContent = d.colorLabel;
+  document.getElementById('styleLabel').textContent = d.styleLabel;
+  document.getElementById('platformLabel').textContent = d.platformLabel;
+  document.getElementById('s1title').textContent = d.s1title;
+  document.getElementById('s1sub').textContent   = d.s1sub;
+  document.getElementById('s2title').textContent = d.s2title;
+  document.getElementById('s2sub').textContent   = d.s2sub;
+  document.getElementById('s3title').textContent = d.s3title;
+  document.getElementById('s3sub').textContent   = d.s3sub;
+  document.getElementById('s4title').textContent = d.s4title;
+  document.getElementById('s4sub').textContent   = d.s4sub;
+  document.getElementById('footerCredit').textContent = d.footerCredit;
+  document.getElementById('footerDev').textContent    = d.footerDev;
+  document.getElementById('footerCopy').textContent   = d.footerCopy;
+  renderStep1(); renderStep2(); renderStep3(); renderStep4();
+  renderStepBar();
+  updateNavLabels();
+  const bb = document.getElementById('backBtn');
+  bb.textContent = d.back;
+  bb.style.visibility = currentStep===1?'hidden':'visible';
+  const nb = document.getElementById('nextBtn');
+  nb.textContent = currentStep===TOTAL ? d.generate : d.next;
+  nb.className = `btn btn-next s${currentStep}`;
+  checkNav();
+}
+
+/* ── EVENTS ── */
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  if(canAdvance()) goTo(currentStep+1);
+});
+document.getElementById('backBtn').addEventListener('click', ()=>{
+  if(currentStep>1) goTo(currentStep-1);
+});
+document.getElementById('editBtn').addEventListener('click', ()=>{
+  document.getElementById('resultPanel').classList.remove('active');
+  document.getElementById('navBar').style.display = 'flex';
+  goTo(1);
+});
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  Object.keys(st).forEach(k=>Array.isArray(st[k])?st[k]=[]:st[k]='');
+  currentStep=1;
+  applyLang();
+  goTo(1);
+});
+document.getElementById('goFullBtn').addEventListener('click', ()=>{
+  const msg = lang==='he'
+    ? 'הגרסה המלאה — Rulescape v3 — היא קובץ HTML נפרד.\nפתח את הקובץ Rulescape_v3_enhanced.html כדי לגשת לכל הכלים.'
+    : 'The full version — Rulescape v3 — is a separate HTML file.\nOpen Rulescape_v3_enhanced.html to access all tools.';
+  alert(msg);
+});
+document.getElementById('heBtn').addEventListener('click', ()=>{ lang='he'; applyLang(); });
+document.getElementById('enBtn').addEventListener('click', ()=>{ lang='en'; applyLang(); });
+
+document.getElementById('copyShortBtn').addEventListener('click', function(){ copyText(document.getElementById('shortOut').textContent, this); });
+document.getElementById('copyHeBtn').addEventListener('click', function(){ copyText(document.getElementById('heOut').textContent, this); });
+document.getElementById('copyEnBtn').addEventListener('click', function(){ copyText(document.getElementById('enOut').textContent, this); });
+
+function getPreferredPromptForAI(){
+  const englishPrompt = document.getElementById('enOut')?.textContent || '';
+  const shortPrompt = document.getElementById('shortOut')?.textContent || '';
+  return englishPrompt.trim() || shortPrompt.trim();
+}
+function copyAndOpenAI(url, btn){
+  const prompt = getPreferredPromptForAI();
+  if(prompt) copyText(prompt, btn);
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+document.getElementById('openChatGPTBtn').addEventListener('click', function(){
+  copyAndOpenAI('https://chatgpt.com/', this);
+});
+document.getElementById('openGeminiBtn').addEventListener('click', function(){
+  copyAndOpenAI('https://gemini.google.com/app', this);
+});
+
+/* ── CLEAR CURRENT STEP ── */
+function clearStep(){
+  const s = currentStep;
+  if(s===1){ st.primaryHe='';st.primaryEn='';st.subHe='';st.subEn=''; renderStep1(); }
+  else if(s===2){ st.moodHe='';st.moodEn='';st.condHe=[];st.condEn=[]; renderStep2(); }
+  else if(s===3){ st.angleHe='';st.angleEn='';st.framingHe='';st.framingEn='';st.colorHe='';st.colorEn=''; renderStep3(); }
+  else if(s===4){ st.styleHe='';st.styleEn='';st.platformHe='';st.platformEn=''; renderStep4(); }
+  checkNav(); renderStepBar(); updateBnavBadges(); saveState();
+}
+document.getElementById('clearStepBtn').addEventListener('click',()=>{
+  const msg = lang==='he' ? 'למחוק את הבחירות בשלב זה?' : 'Clear selections for this step?';
+  if(confirm(msg)) clearStep();
+});
+
+/* ── localStorage ── */
+const LS_KEY = 'rulescape_lite_v14';
+let saveTimer = null;
+function saveState(){
+  try { localStorage.setItem(LS_KEY, JSON.stringify(st)); } catch(e){}
+  const ind = document.getElementById('saveIndicator');
+  if(ind){ ind.classList.add('show'); clearTimeout(saveTimer); saveTimer=setTimeout(()=>ind.classList.remove('show'),1400); }
+}
+function loadState(){
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    Object.keys(saved).forEach(k=>{ if(k in st) st[k]=saved[k]; });
+  } catch(e){}
+}
+
+/* ── Update checkNav to also toggle clear button ── */
+function checkNav(){
+  const nb = document.getElementById('nextBtn');
+  nb.disabled = !canAdvance();
+  const cb = document.getElementById('clearStepBtn');
+  if(cb) cb.disabled = stepCount(currentStep)===0;
+}
+
+/* ── MOBILE BOTTOM NAV ── */
+function isMobile(){ return window.innerWidth <= 600; }
+function updateBnavActive(){
+  if(!isMobile()) return;
+  document.querySelectorAll('.bnav-btn').forEach((btn,i)=>{
+    const step = i+1;
+    btn.classList.toggle('active', step===currentStep);
+  });
+}
+function setBnavBadge(id, val){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(!val){ el.classList.remove('show'); return; }
+  el.textContent = val==='done'?'✓':val;
+  el.classList.add('show');
+}
+function updateBnavBadges(){
+  if(!isMobile()) return;
+  for(let i=1;i<=4;i++){
+    const c = stepCount(i);
+    setBnavBadge('bb'+i, c>0 ? (stepFilled(i)?'done':c) : null);
+  }
+  // result badge: total filled steps
+  const total = [1,2,3,4].filter(s=>stepFilled(s)).length;
+  setBnavBadge('bbResult', total>0 ? total : null);
+}
+// Wire mobile nav buttons
+for(let i=1;i<=4;i++){
+  (function(n){
+    const btn = document.getElementById('bnav'+n);
+    if(btn) btn.addEventListener('click',()=>{ goTo(n); updateBnavActive(); });
+  })(i);
+}
+document.getElementById('bnavResult')?.addEventListener('click',()=>{
+  if([1,2,3,4].some(s=>stepFilled(s))) showResult();
+});
+
+/* ── BOOT ── */
+loadState();
+applyLang();
+goTo(currentStep);
+updateBnavBadges();
+</script>
+</body>
+</html>
